@@ -34,8 +34,8 @@ app.json_encoder = CustomJSONEncoder
 # MySQL Configuration
 db_config = {
     'host': 'localhost',
-    'user': 'root',
-    'password': 'P##8954',
+    'user': 'Your Username',
+    'password': 'Your PWD',
     'database': 'BookingSystem'
 }
 
@@ -121,7 +121,6 @@ def setup_database():
             db.commit()
             print(f"Updated {affected_rows} payment records with provider IDs")
             
-            # Check if there are still null ProviderIDs
             cursor.execute("SELECT COUNT(*) as count FROM Payments WHERE ProviderID IS NULL")
             still_null = cursor.fetchone()['count']
             
