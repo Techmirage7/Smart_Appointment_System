@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard - Booking System</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .notification-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 0.7rem;
+        }
+        .nav-tabs .nav-link {
+            color: #495057;
+        }
+        .nav-tabs .nav-link.active {
+            font-weight: bold;
+            color: #0d6efd;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="/">
+                <i class="bi bi-calendar-check me-2"></i> Booking System
+            </a>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item position-relative me-3">
+                        <a class="nav-link" href="#" id="notification-icon">
+                            <i class="bi bi-bell-fill"></i>
+                            <span class="badge rounded-pill bg-danger notification-badge" id="notification-count">0</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">
+                            <i class="bi bi-box-arrow-right me-1"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <!-- User Profile -->
+            <div class="col-md-3 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-person-circle me-2"></i>User Profile</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong><i class="bi bi-person me-2"></i>Name:</strong> <span id="user-name"></span></p>
+                        <p><strong><i class="bi bi-envelope me-2"></i>Email:</strong> <span id="user-email"></span></p>
+                        <p><strong><i class="bi bi-person-badge me-2"></i>Type:</strong> <span id="user-type"></span></p>
+                        <p><strong><i class="bi bi-telephone me-2"></i>Phone:</strong> <span id="user-phone"></span></p>
+                    </div>
+                </div>
+                
+                <!-- Notifications Panel -->
+                <div class="card shadow-sm mt-3" id="notifications-panel" style="display: none;">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-bell me-2"></i>Notifications</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush" id="notifications-list">
+                            <!-- Notifications will be loaded here -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Section -->
+            <div class="col-md-9">
+                {% if session.user_type == 'Customer' %}
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Book a Service</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="booking-form">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label for="service" class="form-label">Service</label>
+                                    <select class="form-select" id="service" name="service" required>
+                                        <option value="">Select a service</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="date" class="form-label">Date</label>
+                                    <input type="date" class="form-control" id="date" name="date" min="" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="time" class="form-label">Time</label>
+                                    <input type="time" class="form-control" id="time" name="time" required>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-check2-circle me-2"></i>Book Now
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Tabs for different sections -->
+                <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="bookings-tab" data-bs-toggle="tab" data-bs-target="#bookings" type="button" role="tab">
+                            <i class="bi bi-calendar-check me-2"></i>My Bookings
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="payments-tab" data-bs-toggle="tab" data-bs-target="#payments" type="button" role="tab">
+                            <i class="bi bi-credit-card me-2"></i>Payments
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="invoices-tab" data-bs-toggle="tab" data-bs-target="#invoices" type="button" role="tab">
+                            <i class="bi bi-receipt me-2"></i>Invoices
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button" role="tab">
+                            <i class="bi bi-star me-2"></i>Reviews
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="myTabContent">
+                    <!-- Bookings Tab -->
+                    <div class="tab-pane fade show active" id="bookings" role="tabpanel" aria-labelledby="bookings-tab">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-journal-bookmark me-2"></i>My Bookings</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th><i class="bi bi-briefcase-fill me-1"></i>Service</th>
+                                                <th><i class="bi bi-calendar-event me-1"></i>Date</th>
+                                                <th><i class="bi bi-clock me-1"></i>Time</th>
+                                                <th><i class="bi bi-info-circle me-1"></i>Status</th>
+                                                <th><i class="bi bi-credit-card me-1"></i>Payment</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="bookings-table">
+                                            <!-- Bookings will be loaded here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payments Tab -->
+                    <div class="tab-pane fade" id="payments" role="tabpanel" aria-labelledby="payments-tab">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-credit-card me-2"></i>Payments</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-4">
+                                    <h6 class="border-bottom pb-2 mb-3">Make a Payment</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="paymentBookingId" class="form-label">Select Booking to Pay</label>
+                                            <select class="form-select" id="paymentBookingId">
+                                                <option value="">Select a booking...</option>
+                                                <!-- Will be populated dynamically -->
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="paymentAmount" class="form-label">Amount</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">$</span>
+                                                <input type="number" class="form-control" id="paymentAmount" placeholder="0.00" readonly>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="paymentMethod" class="form-label">Payment Method</label>
+                                            <select class="form-select" id="paymentMethod">
+                                                <option value="credit_card">Credit Card</option>
+                                                <option value="debit_card">Debit Card</option>
+                                                <option value="bank_transfer">Net Banking</option>
+                                                <option value="paypal">PayPal</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <button id="processPaymentBtn" class="btn btn-primary">
+                                                <i class="bi bi-credit-card-fill me-2"></i>Process Payment
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr>
+                                <h6 class="border-bottom pb-2 mb-3">Payment History</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th><i class="bi bi-briefcase-fill me-1"></i>Service</th>
+                                                <th><i class="bi bi-calendar-event me-1"></i>Date</th>
+                                                <th><i class="bi bi-currency-dollar me-1"></i>Amount</th>
+                                                <th><i class="bi bi-wallet me-1"></i>Method</th>
+                                                <th><i class="bi bi-info-circle me-1"></i>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="payments-table">
+                                            <!-- Payments will be loaded here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Invoices Tab -->
+                    <div class="tab-pane fade" id="invoices" role="tabpanel" aria-labelledby="invoices-tab">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-receipt me-2"></i>Invoices</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-4">
+                                    <h6 class="border-bottom pb-2 mb-3">Request an Invoice</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="invoiceBookingId" class="form-label">Select Booking</label>
+                                            <select class="form-select" id="invoiceBookingId">
+                                                <option value="">Select a paid booking...</option>
+                                                <!-- Will be populated dynamically -->
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="invoiceType" class="form-label">Invoice Type</label>
+                                            <select class="form-select" id="invoiceType">
+                                                <option value="standard">Standard Invoice</option>
+                                                <option value="detailed">Detailed Invoice</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <button id="generateInvoiceBtn" class="btn btn-primary">
+                                                <i class="bi bi-receipt me-2"></i>Generate Invoice
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr>
+                                <h6 class="border-bottom pb-2 mb-3">Your Invoices</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th><i class="bi bi-upc me-1"></i>Invoice ID</th>
+                                                <th><i class="bi bi-briefcase-fill me-1"></i>Service</th>
+                                                <th><i class="bi bi-calendar-event me-1"></i>Date</th>
+                                                <th><i class="bi bi-currency-dollar me-1"></i>Amount</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="invoices-table">
+                                            <!-- Invoices will be loaded here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reviews Tab -->
+                    <div class="tab-pane fade" id="reviews" role="tabpanel" aria-labelledby="reviews-tab">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bi bi-star me-2"></i>Your Reviews</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-4">
+                                    <h6 class="border-bottom pb-2 mb-3">Write a New Review</h6>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="reviewProviderId" class="form-label">Select Booking</label>
+                                            <select class="form-select" id="reviewProviderId">
+                                                <option value="">Select a completed booking...</option>
+                                                <!-- Will be populated dynamically -->
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Rating</label>
+                                            <div class="rating">
+                                                <i class="bi bi-star star" data-rating="1"></i>
+                                                <i class="bi bi-star star" data-rating="2"></i>
+                                                <i class="bi bi-star star" data-rating="3"></i>
+                                                <i class="bi bi-star star" data-rating="4"></i>
+                                                <i class="bi bi-star star" data-rating="5"></i>
+                                            </div>
+                                            <input type="hidden" id="reviewRating" value="0">
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="reviewComment" class="form-label">Comment</label>
+                                            <textarea class="form-control" id="reviewComment" rows="3" placeholder="Share your experience..."></textarea>
+                                        </div>
+                                        <div class="col-12">
+                                            <button id="submitReview" class="btn btn-primary">
+                                                <i class="bi bi-star-fill me-2"></i>Submit Review
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr>
+                                <h6 class="border-bottom pb-2 mb-3">Your Past Reviews</h6>
+                                <div id="reviews-container">
+                                    <!-- Reviews will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+        // Check for payment processing flags
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if there's a paid booking ID in the URL (comes from payment processing)
+            const urlParams = new URLSearchParams(window.location.search);
+            const hashParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
+            
+            // Check either in regular params or hash params
+            const paidBookingId = urlParams.get('paid') || hashParams.get('paid');
+            
+            if (paidBookingId) {
+                console.log(`Detected payment completion for booking #${paidBookingId} in URL parameters`);
+                
+                // Immediately update the UI to show this booking as paid
+                const allRows = document.querySelectorAll('#bookings-table tr');
+                allRows.forEach(row => {
+                    // Find the booking by checking the Pay button
+                    const payButton = row.querySelector(`button[onclick="makePayment(${paidBookingId})"]`);
+                    if (payButton) {
+                        // If we found a matching row, update its payment status directly in the UI
+                        const statusCell = row.querySelector('td:nth-child(5)');
+                        if (statusCell) {
+                            statusCell.innerHTML = '<span class="badge bg-success">Paid</span>';
+                            console.log(`Directly updated UI payment status for booking #${paidBookingId}`);
+                        }
+                        
+                        // Replace pay button with review button if appropriate
+                        const actionCell = row.querySelector('td:nth-child(6)');
+                        if (actionCell) {
+                            // Remove the pay button
+                            payButton.remove();
+                        }
+                    }
+                });
+                
+                // Also fetch fresh data
+                fetch(`/api/booking/${paidBookingId}/status?t=${new Date().getTime()}`, {
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
+                })
+                .then(response => response.json())
+                .then(bookingData => {
+                    console.log("Fresh booking status received:", bookingData);
+                    
+                    // If PaymentStatus is not Paid, force an update
+                    if (bookingData.PaymentStatus !== 'Paid') {
+                        console.log("Payment status not showing as paid, forcing update");
+                        fetch(`/force_update_payment/${paidBookingId}?t=${new Date().getTime()}`)
+                            .then(response => response.json())
+                            .then(result => {
+                                if (result.success) {
+                                    console.log("Successfully forced payment status update:", result);
+                                    // Do a full reload of all data
+                                    forceReloadBookingData();
+                                } else {
+                                    console.warn("Failed to force payment status update:", result);
+                                }
+                            })
+                            .catch(error => {
+                                console.error("Error forcing payment status update:", error);
+                            });
+                    } else {
+                        // Force reload all data to ensure everything is up to date
+                        forceReloadBookingData();
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching booking status:", error);
+                    // Fall back to reloading all data
+                    forceReloadBookingData();
+                });
+            }
+            
+            // Check if we just came back from processing a payment
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('payment_processing_')) {
+                    const bookingId = key.split('_')[2];
+                    console.log(`Detected return from payment processing for booking #${bookingId}`);
+                    
+                    // Clear this flag
+                    localStorage.removeItem(key);
+                    
+                    // Force an immediate reload of booking data
+                    forceReloadBookingData();
+                }
+            }
+            
+            // Clean up any other payment flags
+            if (localStorage.getItem('payment_timestamp')) {
+                localStorage.removeItem('payment_timestamp');
+            }
+        });
+        
+        // Function to force a reload of booking data with anti-cache headers
+        function forceReloadBookingData() {
+            console.log("Forcing immediate reload of booking data with anti-cache headers");
+            
+            fetch('/api/user/bookings?nocache=' + new Date().getTime(), {
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache',
+                    'Expires': '0'
+                }
+            })
+            .then(response => response.json())
+            .then(bookings => {
+                console.log("Fresh booking data received:", bookings);
+                updateBookingsTable(bookings);
+                loadPayments();
+            })
+            .catch(error => {
+                console.error("Error reloading booking data:", error);
+            });
+        }
+        
+        // Load user profile
+        fetch('/api/user/profile')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('user-name').textContent = data.name;
+                document.getElementById('user-email').textContent = data.email;
+                document.getElementById('user-type').textContent = data.user_type;
+                document.getElementById('user-phone').textContent = data.phone;
+            });
+
+        // Load services with debugging
+        console.log("Starting to load services...");
+        fetch('/api/services')
+            .then(response => {
+                console.log("Service API Response:", response);
+                return response.json();
+            })
+            .then(services => {
+                console.log("Services data received:", services);
+                const serviceSelect = document.getElementById('service');
+                
+                // Clear existing options first
+                serviceSelect.innerHTML = '<option value="">Select a service</option>';
+                
+                if (!Array.isArray(services) || services.length === 0) {
+                    console.warn("No services available or invalid data format");
+                    const option = document.createElement('option');
+                    option.value = "";
+                    option.textContent = "No services available";
+                    option.disabled = true;
+                    serviceSelect.appendChild(option);
+                    return;
+                }
+                
+                console.log("Processing services for dropdown...");
+                services.forEach((service, index) => {
+                    try {
+                        console.log(`Processing service ${index}:`, service);
+                        const option = document.createElement('option');
+                        option.value = service.S_ID;
+                        
+                        // Create a detailed service description
+                        const price = service.Price ? parseFloat(service.Price).toFixed(2) : '0.00';
+                        const duration = service.Duration || 60;
+                        const serviceText = `${service.Name} - $${price} (${duration} mins)`;
+                        const description = service.Description ? ` - ${service.Description}` : '';
+                        option.textContent = serviceText + description;
+                        
+                        // Add data attributes for service details
+                        option.dataset.price = price;
+                        option.dataset.duration = duration;
+                        option.dataset.description = service.Description || '';
+                        
+                        serviceSelect.appendChild(option);
+                        console.log(`Added service option: ${serviceText}`);
+                    } catch (err) {
+                        console.error("Error adding service option:", err, service);
+                    }
+                });
+
+                console.log("Finished loading services. Total options:", serviceSelect.options.length);
+            })
+            .catch(error => {
+                console.error("Error loading services:", error);
+                const serviceSelect = document.getElementById('service');
+                serviceSelect.innerHTML = '<option value="">Error loading services</option>';
+            });
+
+        // Load notifications
+        fetch('/api/user/notifications')
+            .then(response => response.json())
+            .then(notifications => {
+                const notificationsList = document.getElementById('notifications-list');
+                const notificationCount = document.getElementById('notification-count');
+                
+                notificationCount.textContent = notifications.length;
+                
+                notifications.forEach(notification => {
+                    const li = document.createElement('li');
+                    li.className = 'list-group-item';
+                    li.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>${notification.Message}</div>
+                            <small class="text-muted">${new Date(notification.Timestamp).toLocaleString()}</small>
+                        </div>
+                    `;
+                    notificationsList.appendChild(li);
+                });
+            });
+
+        // Toggle notifications panel
+        document.getElementById('notification-icon').addEventListener('click', function(e) {
+            e.preventDefault();
+            const panel = document.getElementById('notifications-panel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        });
+
+        // Handle booking form submission
+        document.getElementById('booking-form')?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const serviceId = document.getElementById('service').value;
+            const date = document.getElementById('date').value;
+            const time = document.getElementById('time').value;
+            
+            // Validate required fields
+            if (!serviceId || !date || !time) {
+                alert('Please fill in all required fields');
+                return;
+            }
+            
+            // Validate date format
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+                alert('Please enter a valid date in YYYY-MM-DD format');
+                return;
+            }
+            
+            // Validate time format
+            if (!/^\d{2}:\d{2}$/.test(time)) {
+                alert('Please enter a valid time in HH:MM format');
+                return;
+            }
+            
+            const formData = {
+                service_id: serviceId,
+                date: date,
+                time: time
+            };
+
+            fetch('/api/bookings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    alert('Booking created successfully! Please proceed to the Payments tab to complete your payment.');
+                    // Automatically load the bookings tab and refresh data
+                    loadBookings();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error creating booking');
+            });
+        });
+
+        // Load bookings with improved payment status handling
+        function loadBookings() {
+            const timestamp = new Date().getTime();
+            console.log("Loading bookings with timestamp: " + timestamp);
+            fetch('/api/user/bookings?t=' + timestamp)
+                .then(response => response.json())
+                .then(bookings => {
+                    console.log("Bookings data received:", bookings);
+                    const tableBody = document.getElementById('bookings-table');
+                    tableBody.innerHTML = '';
+                    
+                    bookings.forEach(booking => {
+                        console.log(`Processing booking #${booking.B_ID}:`, booking);
+                        const row = document.createElement('tr');
+                        
+                        // Determine booking status - Default to Pending for new bookings
+                        let statusBadge = booking.Status || 'Pending';
+                        let statusClass = 'warning';
+                        
+                        if (statusBadge === 'Confirmed') {
+                            statusClass = 'success';
+                        } else if (statusBadge === 'Cancelled' || booking.is_cancelled > 0) {
+                            statusClass = 'danger';
+                            statusBadge = 'Cancelled';
+                        }
+                        
+                        // Determine payment status - Default to Not Paid for new bookings
+                        let paymentBadge = 'Not Paid';
+                        let paymentClass = 'secondary';
+                        let paymentActions = '';
+                        
+                        if (booking.PaymentStatus === 'Paid') {
+                            paymentBadge = 'Paid';
+                            paymentClass = 'success';
+                        } else if (booking.payment_made > 0) {
+                            paymentBadge = 'Paid';
+                            paymentClass = 'success';
+                        } else if (booking.Status === 'Cancelled' || booking.is_cancelled > 0) {
+                            paymentBadge = 'Cancelled';
+                            paymentClass = 'secondary';
+                        } else {
+                            // Add pay button for pending payments
+                            paymentActions = `
+                                <button class="btn btn-primary btn-sm" onclick="initiatePayment(${booking.B_ID}, '${booking.service_name}', ${booking.Price || 0})">
+                                    <i class="bi bi-credit-card"></i> Pay Now
+                                </button>
+                            `;
+                        }
+                        
+                        // Create row content
+                        row.innerHTML = `
+                            <td>${booking.service_name}</td>
+                            <td>${booking.BookingDate}</td>
+                            <td>${booking.BookingTime}</td>
+                            <td>
+                                <span class="badge bg-${statusClass}">
+                                    ${statusBadge}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-${paymentClass}">
+                                    ${paymentBadge}
+                                </span>
+                                ${paymentActions}
+                            </td>
+                            <td>
+                                ${(booking.Status !== 'Cancelled' && !booking.is_cancelled) ?
+                                    `<button class="btn btn-outline-danger btn-sm" onclick="cancelBooking(${booking.B_ID})">
+                                        <i class="bi bi-x-circle"></i> Cancel
+                                    </button>` : ''}
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                })
+                .catch(error => {
+                    console.error("Error loading bookings:", error);
+                    const tableBody = document.getElementById('bookings-table');
+                    tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading bookings</td></tr>';
+                });
+        }
+
+        // Function to initiate payment from bookings table with improved price handling
+        function initiatePayment(bookingId, serviceName, price) {
+            console.log(`Initiating payment for booking #${bookingId}: ${serviceName}, Price: $${price}`);
+            
+            // Store payment info in localStorage for persistence
+            localStorage.setItem('pending_payment_booking', bookingId);
+            localStorage.setItem('pending_payment_amount', price);
+            
+            // Switch to payments tab
+            document.getElementById('payments-tab').click();
+            
+            // Wait for the payment select to be populated
+            setTimeout(() => {
+                const paymentSelect = document.getElementById('paymentBookingId');
+                const paymentAmount = document.getElementById('paymentAmount');
+                
+                // Select the booking in the payment dropdown
+                Array.from(paymentSelect.options).forEach(option => {
+                    if (option.value == bookingId) {
+                        option.selected = true;
+                        
+                        // Ensure the amount is set properly
+                        if (price && parseFloat(price) > 0) {
+                            paymentAmount.value = parseFloat(price).toFixed(2);
+                            console.log(`Set payment amount to $${paymentAmount.value}`);
+                        } else if (option.dataset.price) {
+                            paymentAmount.value = parseFloat(option.dataset.price).toFixed(2);
+                            console.log(`Using price from dropdown option: $${paymentAmount.value}`);
+                        }
+                    }
+                });
+                
+                // If we still don't have a price set or it's zero, force fetch the booking details
+                if (!paymentAmount.value || parseFloat(paymentAmount.value) === 0) {
+                    console.log("Fetching price data from API as a fallback");
+                    fetch(`/api/booking/${bookingId}/status`)
+                        .then(response => response.json())
+                        .then(booking => {
+                            if (booking && booking.Price) {
+                                paymentAmount.value = parseFloat(booking.Price).toFixed(2);
+                                console.log(`Fetched price from API: $${paymentAmount.value}`);
+                            }
+                        })
+                        .catch(err => console.error("Error fetching booking details:", err));
+                }
+            }, 500);
+        }
+
+        // Process payment with improved status update
+        document.getElementById('processPaymentBtn').addEventListener('click', function() {
+            const bookingId = document.getElementById('paymentBookingId').value;
+            const amount = document.getElementById('paymentAmount').value;
+            const method = document.getElementById('paymentMethod').value;
+            
+            if (!bookingId) {
+                alert('Please select a booking to pay');
+                return;
+            }
+            
+            if (!amount || parseFloat(amount) <= 0) {
+                alert('Please enter a valid amount');
+                return;
+            }
+            
+            // Disable the button while processing
+            this.disabled = true;
+            this.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Processing...';
+            
+            // Create form data
+            const formData = new FormData();
+            formData.append('payment_method', method);
+            formData.append('amount', amount);
+            formData.append('timestamp', Date.now());
+            
+            console.log(`Processing payment for booking #${bookingId}, Amount: $${amount}, Method: ${method}`);
+            
+            fetch('/process_payment/' + bookingId, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Payment processed successfully! Your booking has been confirmed.');
+                    // Switch to the bookings tab to show the updated status
+                    document.getElementById('bookings-tab').click();
+                    // Reload both bookings and payments
+                    loadBookings();
+                    loadPayments();
+                } else {
+                    alert('Payment failed: ' + (data.message || 'Please try again'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error processing payment. Please try again.');
+            })
+            .finally(() => {
+                // Re-enable the button
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-credit-card-fill me-2"></i>Process Payment';
+            });
+        });
+
+        // Load payments with improved error handling and display
+        function loadPayments() {
+            console.log("Loading payments...");
+            const timestamp = new Date().getTime();
+            
+            // First load unpaid bookings for payment
+            fetch('/api/user/bookings?t=' + timestamp)
+                .then(response => {
+                    console.log("Raw bookings response:", response);
+                    return response.json();
+                })
+                .then(bookings => {
+                    console.log("Received bookings for payment dropdown:", bookings);
+                    const paymentSelect = document.getElementById('paymentBookingId');
+                    if (!paymentSelect) {
+                        console.error("Payment select element not found!");
+                        return;
+                    }
+                    paymentSelect.innerHTML = '<option value="">Select a booking to pay</option>';
+                    
+                    // Filter for unpaid bookings with improved payment status check
+                    const unpaidBookings = bookings.filter(booking => {
+                        console.log("Checking booking payment status:", {
+                            id: booking.B_ID,
+                            status: booking.Status,
+                            paymentStatus: booking.PaymentStatus,
+                            paymentMade: booking.payment_made,
+                            paymentBadge: booking.payment_badge
+                        });
+                        
+                        // Check if the booking is not cancelled and not paid
+                        const isUnpaid = booking.Status !== 'Cancelled' && 
+                                       booking.PaymentStatus !== 'Paid' &&
+                                       booking.payment_badge !== 'Paid' &&
+                                       !booking.payment_made;
+                                       
+                        console.log(`Booking ${booking.B_ID} payment status: ${isUnpaid ? 'Unpaid' : 'Paid'}`);
+                        return isUnpaid;
+                    });
+                    
+                    console.log("Filtered unpaid bookings:", unpaidBookings);
+                    
+                    if (unpaidBookings.length > 0) {
+                        unpaidBookings.forEach(booking => {
+                            try {
+                                const option = document.createElement('option');
+                                option.value = booking.B_ID;
+                                
+                                // Enhanced service details display with debug logging
+                                const price = booking.Price ? parseFloat(booking.Price).toFixed(2) : '0.00';
+                                const dateObj = new Date(booking.BookingDate);
+                                const date = dateObj.toLocaleDateString();
+                                const time = booking.BookingTime || '';
+                                const serviceName = booking.service_name || booking.ServiceName || 'Unknown Service';
+                                
+                                console.log("Processing booking details:", {
+                                    id: booking.B_ID,
+                                    service: serviceName,
+                                    date: date,
+                                    time: time,
+                                    price: price,
+                                    rawPrice: booking.Price
+                                });
+                                
+                                // Include price in the displayed text
+                                const optionText = `${serviceName} - ${date} ${time} - $${price}`;
+                                console.log("Generated option text:", optionText);
+                                
+                                option.textContent = optionText;
+                                option.dataset.price = price;
+                                option.dataset.serviceName = serviceName;
+                                option.dataset.bookingDate = date;
+                                option.dataset.bookingTime = time;
+                                paymentSelect.appendChild(option);
+                            } catch (err) {
+                                console.error("Error processing booking for dropdown:", err, booking);
+                            }
+                        });
+                    } else {
+                        console.log("No unpaid bookings found");
+                        const option = document.createElement('option');
+                        option.disabled = true;
+                        option.textContent = "No unpaid bookings available";
+                        paymentSelect.appendChild(option);
+                    }
+                })
+                .catch(error => {
+                    console.error("Error loading bookings for payment:", error);
+                });
+
+            // Then load payment history with enhanced details
+            fetch('/api/user/payments?t=' + timestamp)
+                .then(response => {
+                    console.log("Raw payments response:", response);
+                    return response.json();
+                })
+                .then(payments => {
+                    console.log("Payment history received:", payments);
+                    const tableBody = document.getElementById('payments-table');
+                    if (!tableBody) {
+                        console.error("Payments table body element not found!");
+                        return;
+                    }
+                    tableBody.innerHTML = '';
+                    
+                    if (!Array.isArray(payments) || payments.length === 0) {
+                        console.log("No payment records found");
+                        tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No payment records found</td></tr>';
+                        return;
+                    }
+                    
+                    payments.forEach(payment => {
+                        try {
+                            console.log("Processing payment record:", payment);
+                            const row = document.createElement('tr');
+                            const amount = payment.Amount ? parseFloat(payment.Amount).toFixed(2) : '0.00';
+                            const date = payment.PaymentDate || payment.BookingDate || 'Not specified';
+                            const time = payment.BookingTime || '';
+                            const serviceName = payment.service_name || payment.ServiceName || 'Unknown Service';
+                            
+                            // Enhanced payment history display
+                            const rowHtml = `
+                                <td>
+                                    <div class="fw-bold">${serviceName}</div>
+                                    <small class="text-muted">Booking #${payment.B_ID || payment.BookingID || 'N/A'}</small>
+                                </td>
+                                <td>
+                                    <div>${date}</div>
+                                    <small class="text-muted">${time}</small>
+                                </td>
+                                <td>
+                                    <div class="fw-bold">$${amount}</div>
+                                </td>
+                                <td>
+                                    <div>${payment.PaymentMethod || 'Standard Payment'}</div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-${payment.PaymentStatus === 'Success' ? 'success' : 'warning'}">
+                                        ${payment.PaymentStatus || 'Completed'}
+                                    </span>
+                                </td>
+                            `;
+                            console.log("Generated payment row HTML:", rowHtml);
+                            row.innerHTML = rowHtml;
+                            tableBody.appendChild(row);
+                        } catch (err) {
+                            console.error("Error processing payment record:", err, payment);
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error("Error loading payment history:", error);
+                    const tableBody = document.getElementById('payments-table');
+                    if (tableBody) {
+                        tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading payment data</td></tr>';
+                    }
+                });
+        }
+
+        // Function to cancel a booking
+        function cancelBooking(bookingId) {
+            if (confirm("Are you sure you want to cancel this booking?")) {
+                fetch(`/cancel_booking/${bookingId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Booking cancelled successfully");
+                        loadBookings();
+                    } else {
+                        alert("Failed to cancel booking: " + (data.message || "Please try again"));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert("Failed to cancel booking. Please try again.");
+                });
+            }
+        }
+
+        // Load invoices with improved functionality
+        function loadInvoices() {
+            console.log("Loading invoices...");
+            const timestamp = new Date().getTime();
+            
+            // First load paid bookings for invoice generation
+            fetch('/api/user/bookings?t=' + timestamp)
+                .then(response => response.json())
+                .then(bookings => {
+                    const invoiceSelect = document.getElementById('invoiceBookingId');
+                    invoiceSelect.innerHTML = '<option value="">Select a booking</option>';
+                    
+                    // Filter for paid bookings
+                    const paidBookings = bookings.filter(booking => 
+                        booking.PaymentStatus === 'Paid' || 
+                        booking.payment_made > 0
+                    );
+                    
+                    if (paidBookings.length > 0) {
+                        paidBookings.forEach(booking => {
+                            const option = document.createElement('option');
+                            option.value = booking.B_ID;
+                            option.textContent = `${booking.service_name} - ${booking.BookingDate}`;
+                            invoiceSelect.appendChild(option);
+                        });
+                    } else {
+                        const option = document.createElement('option');
+                        option.disabled = true;
+                        option.textContent = "No paid bookings available";
+                        invoiceSelect.appendChild(option);
+                    }
+                });
+
+            // Then load existing invoices
+            fetch('/api/user/invoices?t=' + timestamp)
+                .then(response => response.json())
+                .then(invoices => {
+                    console.log("Invoices received:", invoices);
+                    const tableBody = document.getElementById('invoices-table');
+                    tableBody.innerHTML = '';
+                    
+                    if (!Array.isArray(invoices) || invoices.length === 0) {
+                        tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No invoices found</td></tr>';
+                        return;
+                    }
+                    
+                    invoices.forEach(invoice => {
+                        const row = document.createElement('tr');
+                        const amount = invoice.Amount ? parseFloat(invoice.Amount).toFixed(2) : '0.00';
+                        
+                        row.innerHTML = `
+                            <td>${invoice.I_ID || 'N/A'}</td>
+                            <td>${invoice.service_name || 'Unknown Service'}</td>
+                            <td>${invoice.BookingDate || 'Not specified'}</td>
+                            <td>$${amount}</td>
+                            <td>
+                                <a href="/invoice/${invoice.B_ID}" class="btn btn-outline-primary btn-sm" target="_blank">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                                <button class="btn btn-outline-secondary btn-sm ms-1" onclick="downloadInvoice(${invoice.B_ID})">
+                                    <i class="bi bi-download"></i> Download
+                                </button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                })
+                .catch(error => {
+                    console.error("Error loading invoices:", error);
+                    const tableBody = document.getElementById('invoices-table');
+                    tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading invoice data</td></tr>';
+                });
+        }
+
+        // Download invoice function
+        function downloadInvoice(invoiceId) {
+            window.open(`/invoice/${invoiceId}?download=true`, '_blank');
+        }
+
+        // Load reviews with improved functionality
+        function loadReviews() {
+            console.log("Loading reviews...");
+            
+            // First load completed bookings that can be reviewed
+            fetch('/api/user/bookings')
+                .then(response => response.json())
+                .then(bookings => {
+                    const reviewSelect = document.getElementById('reviewProviderId');
+                    reviewSelect.innerHTML = '<option value="">Select a booking to review</option>';
+                    
+                    // Filter for completed bookings
+                    const completedBookings = bookings.filter(booking => 
+                        booking.Status === 'Confirmed' && 
+                        booking.PaymentStatus === 'Paid'
+                    );
+                    
+                    if (completedBookings.length > 0) {
+                        completedBookings.forEach(booking => {
+                            const option = document.createElement('option');
+                            option.value = booking.ProviderID;
+                            option.dataset.bookingId = booking.B_ID;
+                            option.textContent = `${booking.service_name} - ${booking.BookingDate}`;
+                            reviewSelect.appendChild(option);
+                        });
+                    } else {
+                        const option = document.createElement('option');
+                        option.disabled = true;
+                        option.textContent = "No completed bookings available for review";
+                        reviewSelect.appendChild(option);
+                    }
+                });
+
+            // Then load existing reviews
+            fetch('/api/user/reviews')
+                .then(response => response.json())
+                .then(reviews => {
+                    console.log("Reviews received:", reviews);
+                    const container = document.getElementById('reviews-container');
+                    container.innerHTML = '';
+                    
+                    if (!Array.isArray(reviews) || reviews.length === 0) {
+                        container.innerHTML = '<div class="alert alert-info">No reviews yet</div>';
+                        return;
+                    }
+                    
+                    reviews.forEach(review => {
+                        const reviewCard = document.createElement('div');
+                        reviewCard.className = 'card mb-3';
+                        
+                        const rating = parseInt(review.Rating) || 0;
+                        const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+                        const date = new Date(review.Timestamp || review.ReviewDate || Date.now()).toLocaleDateString();
+                        
+                        reviewCard.innerHTML = `
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="card-subtitle mb-0">
+                                        <span class="text-primary">${review.service_name || 'Unknown Service'}</span>
+                                    </h6>
+                                    <span class="badge bg-warning text-dark">${stars}</span>
+                                </div>
+                                <p class="card-text">${review.Comments || 'No comments provided'}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">Reviewed on: ${date}</small>
+                                    ${review.provider_name ? `<small class="text-muted">Provider: ${review.provider_name}</small>` : ''}
+                                </div>
+                            </div>
+                        `;
+                        container.appendChild(reviewCard);
+                    });
+                })
+                .catch(error => {
+                    console.error("Error loading reviews:", error);
+                    const container = document.getElementById('reviews-container');
+                    container.innerHTML = '<div class="alert alert-danger">Error loading reviews</div>';
+                });
+        }
+
+        // Star rating functionality
+        document.querySelectorAll('.star').forEach(star => {
+            star.addEventListener('mouseover', function() {
+                const rating = this.getAttribute('data-rating');
+                updateStarDisplay(rating, true);
+            });
+            
+            star.addEventListener('mouseout', function() {
+                const currentRating = document.getElementById('reviewRating').value;
+                updateStarDisplay(currentRating, false);
+            });
+            
+            star.addEventListener('click', function() {
+                const rating = this.getAttribute('data-rating');
+                document.getElementById('reviewRating').value = rating;
+                updateStarDisplay(rating, false);
+            });
+        });
+
+        function updateStarDisplay(rating, isHover) {
+            document.querySelectorAll('.star').forEach(s => {
+                const sRating = s.getAttribute('data-rating');
+                if (sRating <= rating) {
+                    s.classList.remove('bi-star');
+                    s.classList.add('bi-star-fill');
+                    if (isHover) s.classList.add('text-warning');
+                } else {
+                    s.classList.remove('bi-star-fill', 'text-warning');
+                    s.classList.add('bi-star');
+                }
+            });
+        }
+
+        // Submit review with improved validation and feedback
+        document.getElementById('submitReview').addEventListener('click', function() {
+            const providerSelect = document.getElementById('reviewProviderId');
+            const providerId = providerSelect.value;
+            const rating = document.getElementById('reviewRating').value;
+            const comments = document.getElementById('reviewComment').value;
+            
+            if (!providerId) {
+                alert('Please select a booking to review');
+                return;
+            }
+            
+            if (rating === '0') {
+                alert('Please select a rating');
+                return;
+            }
+            
+            if (!comments.trim()) {
+                alert('Please enter your comments');
+                return;
+            }
+            
+            // Disable submit button while processing
+            const submitBtn = document.getElementById('submitReview');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Submitting...';
+            
+            // Prepare the review data
+            const reviewData = {
+                provider_id: providerId,
+                rating: parseInt(rating),
+                comments: comments.trim()
+            };
+            
+            console.log('Submitting review:', reviewData);
+            
+            fetch('/api/reviews', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(reviewData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Review submission response:', data);
+                
+                // Check if the review was added successfully
+                if (data.success || data.message === 'Review added successfully') {
+                    // Show success message
+                    alert('Review submitted successfully!');
+                    
+                    // Reset form
+                    providerSelect.value = '';
+                    document.getElementById('reviewRating').value = '0';
+                    document.getElementById('reviewComment').value = '';
+                    updateStarDisplay(0, false);
+                    
+                    // Reload reviews
+                    loadReviews();
+                } else {
+                    // Show error message only for actual errors
+                    alert('Failed to submit review: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error submitting review:', error);
+                alert('An error occurred while submitting the review. Please try again.');
+            })
+            .finally(() => {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-star-fill me-2"></i>Submit Review';
+            });
+        });
+
+        // Tab change event listeners
+        document.getElementById('bookings-tab').addEventListener('click', function() {
+            loadBookings();
+        });
+        document.getElementById('payments-tab').addEventListener('click', function() {
+            console.log("Payments tab clicked - loading payment data...");
+            loadPayments();
+        });
+        document.getElementById('invoices-tab').addEventListener('click', function() {
+            loadInvoices();
+        });
+        document.getElementById('reviews-tab').addEventListener('click', function() {
+            loadReviews();
+        });
+
+        // Check if URL has a hash fragment and activate that tab
+        if(window.location.hash) {
+            const hashParts = window.location.hash.split('?');
+            const tabId = hashParts[0].substring(1); // Remove the # character
+            const tabEl = document.getElementById(tabId + '-tab');
+            const isRefresh = window.location.href.includes('refresh=');
+            
+            if(tabEl) {
+                const tab = new bootstrap.Tab(tabEl);
+                tab.show();
+                
+                // Always refresh all data when coming back from a redirect
+                console.log("Hash detected, refreshing all data");
+                
+                // If this is a payment refresh, force a hard reload by clearing browser cache
+                if(isRefresh) {
+                    console.log("Refresh parameter detected, forcing hard reload of data");
+                    // Use a longer timeout to ensure the page is fully loaded
+                    setTimeout(() => {
+                        fetch('/api/user/bookings?nocache=' + new Date().getTime(), {
+                            headers: {
+                                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                                'Pragma': 'no-cache',
+                                'Expires': '0'
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(bookings => {
+                            console.log("Forced reload of bookings data:", bookings);
+                            updateBookingsTable(bookings);
+                        });
+                        
+                        loadPayments();
+                        loadInvoices();
+                        loadReviews();
+                    }, 500);
+                } else {
+                    setTimeout(() => {
+                        loadBookings();
+                        loadPayments();
+                        loadInvoices();
+                        loadReviews();
+                    }, 200);
+                }
+            }
+        }
+        
+        // Helper function to update bookings table with data
+        function updateBookingsTable(bookings) {
+            const tableBody = document.getElementById('bookings-table');
+            tableBody.innerHTML = '';
+            
+            bookings.forEach(booking => {
+                console.log(`Updating UI for Booking #${booking.B_ID} - Status: ${booking.Status}, PaymentStatus: ${booking.PaymentStatus}`);
+                const row = document.createElement('tr');
+                
+                // Default to Pending for new bookings
+                let statusBadge = booking.Status || 'Pending';
+                let statusClass = 'warning';
+                
+                if (statusBadge === 'Confirmed') {
+                    statusClass = 'success';
+                } else if (statusBadge === 'Cancelled' || booking.is_cancelled > 0) {
+                    statusClass = 'danger';
+                    statusBadge = 'Cancelled';
+                }
+                
+                // Default to Not Paid for new bookings
+                let paymentBadge = 'Not Paid';
+                let paymentClass = 'secondary';
+                let paymentActions = '';
+                
+                if (booking.PaymentStatus === 'Paid') {
+                    paymentBadge = 'Paid';
+                    paymentClass = 'success';
+                } else if (booking.payment_made > 0) {
+                    paymentBadge = 'Paid';
+                    paymentClass = 'success';
+                } else if (booking.Status === 'Cancelled' || booking.is_cancelled > 0) {
+                    paymentBadge = 'Cancelled';
+                    paymentClass = 'secondary';
+                } else {
+                    // Add pay button for pending payments
+                    paymentActions = `
+                        <button class="btn btn-primary btn-sm" onclick="initiatePayment(${booking.B_ID}, '${booking.service_name}', ${booking.Price || 0})">
+                            <i class="bi bi-credit-card"></i> Pay Now
+                        </button>
+                    `;
+                }
+                
+                row.innerHTML = `
+                    <td>${booking.service_name}</td>
+                    <td>${booking.BookingDate}</td>
+                    <td>${booking.BookingTime}</td>
+                    <td>
+                        <span class="badge bg-${statusClass}">
+                            ${statusBadge}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge bg-${paymentClass}">
+                            ${paymentBadge}
+                        </span>
+                        ${paymentActions}
+                    </td>
+                    <td>
+                        ${(booking.Status !== 'Cancelled' && !booking.is_cancelled) ?
+                            `<button class="btn btn-outline-danger btn-sm" onclick="cancelBooking(${booking.B_ID})">
+                                <i class="bi bi-x-circle"></i> Cancel
+                             </button>` : ''}
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Event listener for payment booking selection with improved price handling
+        document.getElementById('paymentBookingId').addEventListener('change', function() {
+            const selected = this.options[this.selectedIndex];
+            const amountField = document.getElementById('paymentAmount');
+            
+            console.log("Payment booking selection changed:", selected ? {
+                value: selected.value,
+                text: selected.textContent,
+                price: selected.dataset.price
+            } : "No option selected");
+            
+            if (selected) {
+                let price = 0;
+                
+                // First try to get price from dataset
+                if (selected.dataset.price) {
+                    price = parseFloat(selected.dataset.price);
+                } 
+                // If not in dataset, try to extract from option text
+                else if (selected.textContent) {
+                    // Try to extract price from option text (format: "Service - Date Time - $50.00")
+                    const priceMatch = selected.textContent.match(/\$(\d+\.\d+)/);
+                    if (priceMatch && priceMatch[1]) {
+                        price = parseFloat(priceMatch[1]);
+                    }
+                }
+                
+                // Ensure we have a valid price
+                if (price > 0) {
+                    amountField.value = price.toFixed(2);
+                    console.log(`Selected booking #${selected.value} for payment: Price=$${price.toFixed(2)}`);
+                } else {
+                    // If we still don't have a price, try to fetch it from the API
+                    amountField.value = '0.00';
+                    fetch(`/api/booking/${selected.value}/status`)
+                        .then(response => response.json())
+                        .then(booking => {
+                            if (booking && booking.Price) {
+                                const apiPrice = parseFloat(booking.Price);
+                                amountField.value = apiPrice.toFixed(2);
+                                console.log(`Fetched price from API: $${apiPrice.toFixed(2)}`);
+                            }
+                        })
+                        .catch(err => console.error("Error fetching booking details:", err));
+                }
+            } else {
+                amountField.value = '0.00';
+                console.log("No booking selected");
+            }
+        });
+
+        // Event listener for invoice generation
+        document.getElementById('generateInvoiceBtn').addEventListener('click', function() {
+            const bookingId = document.getElementById('invoiceBookingId').value;
+            if (!bookingId) {
+                alert('Please select a booking');
+                return;
+            }
+            window.open(`/invoice/${bookingId}`, '_blank');
+        });
+
+        // Load initial data
+        loadBookings();
+
+        // Initialize min date for booking input
+        function initDatepicker() {
+            // Get today's date in YYYY-MM-DD format
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const todayFormatted = `${year}-${month}-${day}`;
+            
+            // Set the minimum date for the date input
+            const dateInput = document.getElementById('date');
+            if (dateInput) {
+                dateInput.setAttribute('min', todayFormatted);
+                
+                // Add event listener to validate date selection
+                dateInput.addEventListener('change', function() {
+                    const selectedDate = new Date(this.value);
+                    // Reset time part for comparison
+                    const selectedDay = new Date(selectedDate.setHours(0,0,0,0));
+                    const currentDay = new Date(today.setHours(0,0,0,0));
+                    
+                    if (selectedDay < currentDay) {
+                        alert('Please select today or a future date.');
+                        this.value = todayFormatted;
+                    }
+                });
+            }
+        }
+
+        // Call date initialization when DOM loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initDatepicker();
+        });
+    </script>
+</body>
+</html>

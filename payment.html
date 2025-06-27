@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Details - Booking System</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">Booking System</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/payments">Payments</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item" id="login-menu-item">
+                        <a class="nav-link" href="/login">Login</a>
+                    </li>
+                    <li class="nav-item" id="register-menu-item">
+                        <a class="nav-link" href="/register">Register</a>
+                    </li>
+                    <li class="nav-item d-none" id="logout-menu-item">
+                        <a class="nav-link" href="#" id="logout-link">Logout</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mt-4">
+        <div class="auth-required d-none">
+            <div class="row">
+                <div class="col-md-8 offset-md-2">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white">
+                            <h3 class="mb-0">Payment Details</h3>
+                        </div>
+                        <div class="card-body">
+                            <div id="payment-loading">
+                                <p class="text-center">Loading booking details...</p>
+                            </div>
+                            
+                            <div id="payment-details" class="d-none">
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <h5>Booking Information</h5>
+                                        <p><strong>Booking ID:</strong> <span id="booking-id"></span></p>
+                                        <p><strong>Service:</strong> <span id="service-name"></span></p>
+                                        <p><strong>Date:</strong> <span id="booking-date"></span></p>
+                                        <p><strong>Time:</strong> <span id="booking-time"></span></p>
+                                        <p><strong>Status:</strong> <span id="booking-status" class="badge"></span></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h5>Amount Details</h5>
+                                        <p><strong>Service Fee:</strong> $<span id="service-fee"></span></p>
+                                        <p><strong>Tax (10%):</strong> $<span id="tax-amount"></span></p>
+                                        <p><strong>Total Amount:</strong> $<span id="total-amount" class="font-weight-bold"></span></p>
+                                    </div>
+                                </div>
+                                
+                                <hr>
+                                
+                                <h5>Payment Method</h5>
+                                <form id="payment-form">
+                                    <input type="hidden" id="booking_id" name="booking_id">
+                                    
+                                    <div class="form-group">
+                                        <label for="payment_method">Select Payment Method</label>
+                                        <select class="form-control" id="payment_method" name="payment_method" required>
+                                            <option value="">Choose a payment method</option>
+                                            <option value="credit_card">Credit Card</option>
+                                            <option value="debit_card">Debit Card</option>
+                                            <option value="bank_transfer">Net Banking</option>
+                                            <option value="paypal">PayPal</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div id="credit-card-fields" class="d-none">
+                                        <div class="form-group">
+                                            <label for="card_number">Card Number</label>
+                                            <input type="text" class="form-control" id="card_number" placeholder="1234 5678 9012 3456">
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="expiry_date">Expiry Date</label>
+                                                    <input type="text" class="form-control" id="expiry_date" placeholder="MM/YY">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="cvv">CVV</label>
+                                                    <input type="text" class="form-control" id="cvv" placeholder="123">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="notes">Notes (Optional)</label>
+                                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                                    </div>
+                                    
+                                    <div class="text-center mt-4">
+                                        <button type="submit" class="btn btn-primary btn-lg" id="pay-now-btn">Pay Now</button>
+                                        <a href="/dashboard" class="btn btn-secondary btn-lg ml-2">Cancel</a>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <div id="payment-error" class="alert alert-danger d-none">
+                                An error occurred while loading the booking details. Please try again.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="not-auth-required">
+            <div class="alert alert-warning">
+                <h4>You need to login to process payments</h4>
+                <p>Please <a href="/login">login</a> or <a href="/register">register</a> to process payments for your bookings.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Component -->
+    <div id="notification" class="notification"></div>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is authenticated
+            checkAuth();
+            
+            // Get booking ID from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const bookingId = urlParams.get('id');
+            
+            if (bookingId) {
+                document.getElementById('booking_id').value = bookingId;
+                loadBookingDetails(bookingId);
+            } else {
+                document.getElementById('payment-loading').classList.add('d-none');
+                document.getElementById('payment-error').classList.remove('d-none');
+                document.getElementById('payment-error').innerHTML = "No booking ID provided.";
+            }
+            
+            // Handle payment method change
+            document.getElementById('payment_method').addEventListener('change', function() {
+                const method = this.value;
+                if (method === 'credit_card' || method === 'debit_card') {
+                    document.getElementById('credit-card-fields').classList.remove('d-none');
+                } else {
+                    document.getElementById('credit-card-fields').classList.add('d-none');
+                }
+            });
+            
+            // Handle form submission
+            document.getElementById('payment-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const bookingId = document.getElementById('booking_id').value;
+                const paymentMethod = document.getElementById('payment_method').value;
+                const notes = document.getElementById('notes').value;
+                
+                if (!paymentMethod) {
+                    showNotification('Please select a payment method', 'error');
+                    return;
+                }
+                
+                // Disable the submit button to prevent multiple submissions
+                document.getElementById('pay-now-btn').disabled = true;
+                
+                // Process payment
+                processPayment(bookingId, paymentMethod, notes);
+            });
+        });
+        
+        function loadBookingDetails(bookingId) {
+            fetch(`/api/bookings/${bookingId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load booking details');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        const booking = data.booking;
+                        
+                        // Fill booking details
+                        document.getElementById('booking-id').textContent = booking.id;
+                        document.getElementById('service-name').textContent = booking.service_name;
+                        document.getElementById('booking-date').textContent = formatDate(booking.booking_date);
+                        document.getElementById('booking-time').textContent = booking.booking_time;
+                        
+                        // Set status with appropriate badge color
+                        const statusEl = document.getElementById('booking-status');
+                        statusEl.textContent = booking.status;
+                        if (booking.status === 'Pending') {
+                            statusEl.classList.add('badge-warning');
+                        } else if (booking.status === 'Confirmed') {
+                            statusEl.classList.add('badge-success');
+                        } else if (booking.status === 'Cancelled') {
+                            statusEl.classList.add('badge-danger');
+                        }
+                        
+                        // Fill amount details
+                        const serviceFee = parseFloat(booking.price);
+                        const taxAmount = serviceFee * 0.1;
+                        const totalAmount = serviceFee + taxAmount;
+                        
+                        document.getElementById('service-fee').textContent = serviceFee.toFixed(2);
+                        document.getElementById('tax-amount').textContent = taxAmount.toFixed(2);
+                        document.getElementById('total-amount').textContent = totalAmount.toFixed(2);
+                        
+                        // Show details
+                        document.getElementById('payment-loading').classList.add('d-none');
+                        document.getElementById('payment-details').classList.remove('d-none');
+                    } else {
+                        throw new Error(data.message || 'Failed to load booking details');
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('payment-loading').classList.add('d-none');
+                    document.getElementById('payment-error').classList.remove('d-none');
+                    document.getElementById('payment-error').textContent = error.message;
+                });
+        }
+        
+        function processPayment(bookingId, paymentMethod, notes) {
+            const paymentData = {
+                booking_id: bookingId,
+                payment_method: paymentMethod,
+                notes: notes
+            };
+            
+            fetch('/api/payments', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(paymentData)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        showNotification('Payment processed successfully!', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/payments';
+                        }, 2000);
+                    } else {
+                        throw new Error(data.message || 'Payment processing failed');
+                    }
+                })
+                .catch(error => {
+                    showNotification(error.message, 'error');
+                    document.getElementById('pay-now-btn').disabled = false;
+                });
+        }
+        
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        }
+    </script>
+</body>
+</html> 

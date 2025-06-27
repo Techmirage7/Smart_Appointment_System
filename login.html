@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Booking System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">Booking System</a>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-center">Login</h3>
+                    </div>
+                    <div class="card-body">
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+                        
+                        <form method="POST" action="{{ url_for('login') }}">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email address</label>
+                                <input type="email" class="form-control" id="email" name="email" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="user_type" class="form-label">User Type</label>
+                                <select class="form-select" id="user_type" name="user_type" required>
+                                    <option value="Customer">Customer</option>
+                                    <option value="ServiceProvider">Service Provider</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">Login</button>
+                            </div>
+                        </form>
+                        <div class="text-center mt-3">
+                            <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Load User Profile
+        fetch('/api/user/profile')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('user-name').textContent = data.name;
+                document.getElementById('user-email').textContent = data.email;
+                document.getElementById('user-type').textContent = data.user_type;
+            });
+
+        // Load Services
+        fetch('/api/services')
+            .then(response => response.json())
+            .then(services => {
+                const serviceSelect = document.getElementById('service');
+                if (serviceSelect) {
+                    services.forEach(service => {
+                        const option = document.createElement('option');
+                        option.value = service.S_ID;
+                        option.textContent = service.Name;
+                        serviceSelect.appendChild(option);
+                    });
+                }
+            });
+
+        // Load Bookings
+        function loadBookings() {
+            fetch('/api/user/bookings')
+                .then(response => response.json())
+                .then(bookings => {
+                    const tableBody = document.getElementById('bookings-table');
+                    tableBody.innerHTML = '';
+                    bookings.forEach(booking => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${booking.service_name}</td>
+                            <td>${booking.booking_date}</td>
+                            <td>${booking.booking_time}</td>
+                            <td>
+                                <span class="badge bg-${booking.status === 'Pending' ? 'warning' : 'success'}">
+                                    ${booking.status}
+                                </span>
+                            </td>
+                            <td>
+                                ${booking.status === 'Pending' ?
+                                    `<button class="btn btn-outline-danger btn-sm" onclick="cancelBooking(${booking.B_ID})">
+                                        <i class="bi bi-x-circle"></i> Cancel
+                                     </button>` :
+                                    `<span class="text-muted">N/A</span>`}
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                });
+        }
+
+        loadBookings();
+
+        // Handle Booking Form
+        const form = document.getElementById('booking-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = {
+                    service_id: document.getElementById('service').value,
+                    date: document.getElementById('date').value,
+                    time: document.getElementById('time').value
+                };
+
+                fetch('/api/bookings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('Booking created successfully!');
+                    loadBookings();
+                })
+                .catch(error => {
+                    alert('Error creating booking');
+                });
+            });
+        }
+    });
+
+    // Cancel booking function
+    function cancelBooking(id) {
+        fetch(`/api/bookings/${id}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (response.ok) {
+                alert('Booking canceled!');
+                location.reload();
+            } else {
+                alert('Failed to cancel booking.');
+            }
+        });
+    }
+</script>
+
+</html> 

@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}Invoice #{{ invoice_number }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">Invoice #{{ invoice_number }}</h2>
+                <button onclick="window.print()" class="btn btn-light">
+                    <i class="fas fa-print"></i> Print
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5 class="mb-3">Customer Information</h5>
+                    <p><strong>Name:</strong> {{ payment.customer_name }}</p>
+                    <p><strong>Email:</strong> {{ payment.customer_email }}</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <h5 class="mb-3">Service Provider</h5>
+                    <p><strong>Provider:</strong> {{ payment.provider_name }}</p>
+                    <p><strong>Invoice Date:</strong> {{ payment.InvoiceDate|default(payment.payment_date) }}</p>
+                    <p><strong>Payment Status:</strong> <span class="badge bg-success">Paid</span></p>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>Service</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>{{ payment.service_name }}</td>
+                            <td>{{ payment.booking_date }}</td>
+                            <td>{{ payment.booking_time }}</td>
+                            <td>${{ payment.Price|float }}</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-end"><strong>Subtotal</strong></td>
+                            <td>${{ payment.Price|float }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" class="text-end"><strong>Tax ({{ (payment.TaxAmount / payment.Price * 100)|round(2) if payment.TaxAmount else 0 }}%)</strong></td>
+                            <td>${{ payment.TaxAmount|default(0)|float }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" class="text-end"><strong>Total</strong></td>
+                            <td>${{ payment.Amount|float }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-md-8">
+                    <h5>Payment Information</h5>
+                    <p><strong>Payment Method:</strong> {{ payment.PaymentMethod }}</p>
+                    <p><strong>Transaction ID:</strong> {{ payment.TransactionID|default('N/A') }}</p>
+                    <p><strong>Payment Date:</strong> {{ payment.payment_date }}</p>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-light p-3 rounded">
+                        <h5>Thank You!</h5>
+                        <p class="mb-0">We appreciate your business and look forward to serving you again.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('user_dashboard') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+                <button onclick="window.print()" class="btn btn-primary">
+                    <i class="fas fa-print"></i> Print Invoice
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Provider Dashboard - Booking System</title>
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    .notification-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      font-size: 0.7rem;
+    }
+    .nav-tabs .nav-link {
+      color: #495057;
+    }
+    .nav-tabs .nav-link.active {
+      font-weight: bold;
+      color: #0d6efd;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center" href="/">
+        <i class="bi bi-calendar-check me-2"></i> Booking System
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item position-relative me-3">
+            <a class="nav-link" href="#" id="notification-icon">
+              <i class="bi bi-bell-fill"></i>
+              <span class="badge rounded-pill bg-danger notification-badge" id="notification-count">0</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('logout') }}">
+              <i class="bi bi-box-arrow-right me-1"></i> Logout
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-4">
+    <div class="row">
+      <!-- Provider Profile -->
+      <div class="col-md-3 mb-4">
+        <div class="card shadow-sm" id="provider-dashboard">
+          <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-person-circle me-2"></i>Provider Profile</h5>
+          </div>
+          <div class="card-body">
+            <p><strong><i class="bi bi-person me-2"></i>Name:</strong> <span id="provider-name">{{ provider.Name }}</span></p>
+            <p><strong><i class="bi bi-envelope me-2"></i>Email:</strong> <span id="provider-email">{{ provider.Email }}</span></p>
+            <p><strong><i class="bi bi-telephone me-2"></i>Phone:</strong> <span id="provider-phone">{{ provider.Phone_no }}</span></p>
+            <p><strong><i class="bi bi-check-circle me-2"></i>Status:</strong> 
+              <span class="badge {% if provider.Status == 'Approved' %}bg-success{% elif provider.Status == 'Pending' %}bg-warning{% else %}bg-danger{% endif %}">
+                {{ provider.Status|default('Active') }}
+              </span>
+            </p>
+          </div>
+        </div>
+        
+        <!-- Notifications Panel -->
+        <div class="card shadow-sm mt-3" id="notifications-panel" style="display: none;">
+          <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-bell me-2"></i>Notifications</h5>
+          </div>
+          <div class="card-body p-0">
+            <ul class="list-group list-group-flush" id="notifications-list">
+              <!-- Notifications will be loaded here -->
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="col-md-9">
+        <!-- Services -->
+        <div class="card mb-4 shadow-sm">
+          <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-briefcase me-2"></i>Your Services</h5>
+          </div>
+          <div class="card-body">
+            {% if services %}
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Service Name</th>
+                    <th>Price</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for service in services %}
+                  <tr>
+                    <td>{{ service.Name }}</td>
+                    <td>${{ service.Price|default(0)|round(2) }}</td>
+                    <td>{{ service.Description }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+              <i class="bi bi-info-circle me-2"></i>You don't have any services yet.
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Tabs for different sections -->
+        <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="services-tab" data-bs-toggle="tab" data-bs-target="#services" type="button" role="tab">
+              <i class="bi bi-briefcase me-2"></i>My Services
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="earnings-tab" data-bs-toggle="tab" data-bs-target="#earnings" type="button" role="tab">
+              <i class="bi bi-credit-card me-2"></i>Earnings
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab">
+              <i class="bi bi-person-gear me-2"></i>Profile Management
+            </button>
+          </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="myTabContent">
+          <!-- My Services Tab -->
+          <div class="tab-pane fade show active" id="services" role="tabpanel" aria-labelledby="services-tab">
+            <div class="card shadow-sm">
+              <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-briefcase me-2"></i>Services You Offer</h5>
+              </div>
+              <div class="card-body">
+                <div class="mb-4">
+                  <h6 class="border-bottom pb-2 mb-3">Add New Service</h6>
+                  <div class="row g-3">
+                    <div class="col-md-4">
+                      <label for="serviceName" class="form-label">Service Name</label>
+                      <input type="text" class="form-control" id="serviceName" placeholder="e.g. Hair Cut">
+                    </div>
+                    <div class="col-md-4">
+                      <label for="servicePrice" class="form-label">Price ($)</label>
+                      <input type="number" class="form-control" id="servicePrice" placeholder="50.00">
+                    </div>
+                    <div class="col-md-4">
+                      <label for="serviceDuration" class="form-label">Duration (min)</label>
+                      <input type="number" class="form-control" id="serviceDuration" placeholder="60">
+                    </div>
+                    <div class="col-12">
+                      <label for="serviceDescription" class="form-label">Description</label>
+                      <textarea class="form-control" id="serviceDescription" rows="3" placeholder="Describe your service..."></textarea>
+                    </div>
+                    <div class="col-12">
+                      <button id="addServiceBtn" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-2"></i>Add Service
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <hr>
+                <h6 class="border-bottom pb-2 mb-3">Your Current Services</h6>
+                <div class="table-responsive">
+                  <table class="table table-hover">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Service Name</th>
+                        <th>Price</th>
+                        <th>Description</th>
+                        <th>Total Bookings</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="services-table">
+                      <!-- Services will be loaded here -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Earnings Tab -->
+          <div class="tab-pane fade" id="earnings" role="tabpanel" aria-labelledby="earnings-tab">
+            <div class="card shadow-sm">
+              <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-credit-card me-2"></i>Your Earnings</h5>
+                <button id="refresh-earnings" class="btn btn-outline-secondary btn-sm me-2">
+                  <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+                </button>
+                <button id="createTestPaymentsBtn" class="btn btn-outline-primary btn-sm" onclick="createTestPayment()">
+                  <i class="bi bi-database-add me-1"></i> Generate Test Payments
+                </button>
+              </div>
+              <div class="card-body">
+                <div class="mb-4">
+                  <h6 class="border-bottom pb-2 mb-3">Earnings Overview</h6>
+                  <div class="row">
+                    <div class="col-md-4">
+                      <div class="card bg-light text-center mb-3">
+                        <div class="card-body">
+                          <h2 class="text-success" id="total-earnings">$0.00</h2>
+                          <p class="mb-0">Total Earnings</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="card bg-light text-center mb-3">
+                        <div class="card-body">
+                          <h2 class="text-primary" id="month-earnings">$0.00</h2>
+                          <p class="mb-0">This Month</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="col-md-4">
+                      <div class="card bg-light text-center mb-3">
+                        <div class="card-body">
+                          <h2 class="text-info" id="pending-payments">$0.00</h2>
+                          <p class="mb-0">Pending Payments</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <hr>
+                <div class="mt-4">
+                  <h5>Payment History</h5>
+                  <div class="table-responsive">
+                    <table class="table table-striped" id="payment-history-table">
+                      <thead>
+                        <tr>
+                          <th><i class="bi bi-person"></i> Customer</th>
+                          <th><i class="bi bi-briefcase"></i> Service</th>
+                          <th><i class="bi bi-calendar"></i> Date</th>
+                          <th><i class="bi bi-currency-dollar"></i> Amount</th>
+                          <th><i class="bi bi-info-circle"></i> Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td colspan="5" class="text-center">Loading payments...</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Profile Management Tab -->
+          <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+            <div class="card shadow-sm">
+              <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-person-gear me-2"></i>Profile Management</h5>
+              </div>
+              <div class="card-body">
+                <div class="mb-4">
+                  <h6 class="border-bottom pb-2 mb-3">Update Personal Information</h6>
+                  <form id="profile-form">
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <label for="providerName" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="providerName">
+                      </div>
+                      <div class="col-md-6">
+                        <label for="providerEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="providerEmail">
+                      </div>
+                      <div class="col-md-6">
+                        <label for="providerPhone" class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" id="providerPhone">
+                      </div>
+                      <div class="col-md-6">
+                        <label for="providerSpecialization" class="form-label">Specialization</label>
+                        <input type="text" class="form-control" id="providerSpecialization" placeholder="e.g. Hair Styling, Plumbing, etc.">
+                      </div>
+                      <div class="col-12">
+                        <button type="submit" class="btn btn-primary" id="updateProfileBtn">
+                          <i class="bi bi-save me-2"></i>Save Changes
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+                <hr>
+                <div>
+                  <h6 class="border-bottom pb-2 mb-3">Change Password</h6>
+                  <form id="password-form">
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <label for="currentPassword" class="form-label">Current Password</label>
+                        <input type="password" class="form-control" id="currentPassword">
+                      </div>
+                      <div class="col-md-6">
+                        <label for="newPassword" class="form-label">New Password</label>
+                        <input type="password" class="form-control" id="newPassword">
+                      </div>
+                      <div class="col-md-6">
+                        <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                        <input type="password" class="form-control" id="confirmPassword">
+                      </div>
+                      <div class="col-12">
+                        <button type="submit" class="btn btn-primary" id="updatePasswordBtn">
+                          <i class="bi bi-lock me-2"></i>Update Password
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  <script>
+    // Load notifications
+    fetch('/api/user/notifications')
+      .then(response => response.json())
+      .then(notifications => {
+        const notificationsList = document.getElementById('notifications-list');
+        const notificationCount = document.getElementById('notification-count');
+        
+        notificationCount.textContent = notifications.length;
+        
+        if (notifications.length === 0) {
+          const li = document.createElement('li');
+          li.className = 'list-group-item text-center text-muted';
+          li.textContent = 'No notifications';
+          notificationsList.appendChild(li);
+        } else {
+          notifications.forEach(notification => {
+            const li = document.createElement('li');
+            li.className = 'list-group-item';
+            li.innerHTML = `
+              <div class="d-flex justify-content-between align-items-center">
+                <div>${notification.Message}</div>
+                <small class="text-muted">${new Date(notification.Timestamp).toLocaleString()}</small>
+              </div>
+            `;
+            notificationsList.appendChild(li);
+          });
+        }
+      })
+      .catch(error => {
+        console.error('Error loading notifications:', error);
+      });
+
+    // Toggle notifications panel
+    document.getElementById('notification-icon').addEventListener('click', function(e) {
+      e.preventDefault();
+      const panel = document.getElementById('notifications-panel');
+      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    });
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log("Provider dashboard initialized");
+      
+      // Load services data for initial tab
+      loadServices();
+      
+      // Also load earnings data on page load
+      loadEarnings();
+      
+      // Load profile data
+      loadProfileData();
+      
+      // Tab change event listeners
+      document.getElementById('services-tab').addEventListener('click', function() {
+        console.log("Services tab clicked");
+        loadServices();
+      });
+      
+      document.getElementById('earnings-tab').addEventListener('click', function() {
+        console.log("Earnings tab clicked");
+        loadEarnings(); 
+      });
+      
+      document.getElementById('profile-tab').addEventListener('click', function() {
+        console.log("Profile tab clicked");
+        loadProfileData();
+      });
+      
+      // Form submission handlers
+      document.getElementById('profile-form').addEventListener('submit', updateProfile);
+      document.getElementById('password-form').addEventListener('submit', updatePassword);
+      
+      // Make sure addService is attached to the button
+      const addServiceBtn = document.getElementById('addServiceBtn');
+      if (addServiceBtn && !addServiceBtn.hasEventListener) {
+        addServiceBtn.addEventListener('click', function() {
+          if (!this.dataset.serviceId) {
+            addService();
+          }
+        });
+        addServiceBtn.hasEventListener = true;
+      }
+    });
+
+    // Load services data
+    function loadServices() {
+      fetch('/api/provider/services')
+        .then(response => response.json())
+        .then(services => {
+          const tableBody = document.getElementById('services-table');
+          
+          if (!tableBody) {
+            console.error('Services table body element not found');
+            return;
+          }
+          
+          tableBody.innerHTML = '';
+          
+          if (services.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No services added yet</td></tr>';
+            return;
+          }
+          
+          services.forEach(service => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${service.Name}</td>
+              <td>$${service.Price ? service.Price.toFixed(2) : '0.00'}</td>
+              <td>${service.Description || 'No description'}</td>
+              <td><span class="badge bg-primary">${service.BookingCount || 0}</span></td>
+              <td>
+                <button class="btn btn-outline-primary btn-sm me-1" onclick="editService(${service.S_ID})">
+                  <i class="bi bi-pencil"></i> Edit
+                </button>
+                <button class="btn btn-outline-danger btn-sm" onclick="deleteService(${service.S_ID})">
+                  <i class="bi bi-trash"></i> Delete
+                </button>
+              </td>
+            `;
+            tableBody.appendChild(row);
+          });
+        })
+        .catch(error => {
+          console.error('Error loading services:', error);
+        });
+    }
+
+    // Add a new service - Fixed implementation
+    function addService() {
+      const name = document.getElementById('serviceName').value;
+      const price = document.getElementById('servicePrice').value;
+      const description = document.getElementById('serviceDescription').value;
+      const duration = document.getElementById('serviceDuration').value;
+      
+      if (!name || !price) {
+        alert('Please enter a service name and price');
+        return;
+      }
+      
+      fetch('/api/provider/services', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: name,
+          price: parseFloat(price),
+          description: description,
+          duration: parseInt(duration) || 60
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Service added successfully! Note that it may require admin approval before being visible to customers.');
+          // Reset form
+          document.getElementById('serviceName').value = '';
+          document.getElementById('servicePrice').value = '';
+          document.getElementById('serviceDescription').value = '';
+          document.getElementById('serviceDuration').value = '';
+          // Reload services
+          loadServices();
+        } else {
+          alert('Failed to add service: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error adding service');
+      });
+    }
+
+    // Function to edit a service
+    function editService(serviceId) {
+      fetch(`/api/provider/services/${serviceId}`)
+        .then(response => response.json())
+        .then(service => {
+          document.getElementById('serviceName').value = service.Name;
+          document.getElementById('servicePrice').value = service.Price;
+          document.getElementById('serviceDescription').value = service.Description || '';
+          document.getElementById('serviceDuration').value = service.Duration || 60;
+          
+          // Change the add button to update button
+          const addBtn = document.getElementById('addServiceBtn');
+          addBtn.textContent = 'Update Service';
+          addBtn.dataset.serviceId = serviceId;
+          addBtn.removeEventListener('click', addService);
+          addBtn.addEventListener('click', updateService);
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Error loading service details');
+        });
+    }
+
+    // Function to delete a service
+    function deleteService(serviceId) {
+      if (confirm('Are you sure you want to delete this service? This cannot be undone.')) {
+        fetch(`/api/provider/services/${serviceId}`, {
+          method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert('Service deleted successfully');
+            loadServices();
+          } else {
+            alert('Failed to delete service: ' + data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          alert('Error deleting service');
+        });
+      }
+    }
+
+    // Function to update a service
+    function updateService() {
+      const serviceId = this.dataset.serviceId;
+      const name = document.getElementById('serviceName').value;
+      const price = document.getElementById('servicePrice').value;
+      const description = document.getElementById('serviceDescription').value;
+      const duration = document.getElementById('serviceDuration').value;
+      
+      if (!name || !price) {
+        alert('Please enter a service name and price');
+        return;
+      }
+      
+      fetch(`/api/provider/services/${serviceId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: name,
+          price: parseFloat(price),
+          description: description,
+          duration: parseInt(duration) || 60
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Service updated successfully');
+          // Reset form
+          document.getElementById('serviceName').value = '';
+          document.getElementById('servicePrice').value = '';
+          document.getElementById('serviceDescription').value = '';
+          document.getElementById('serviceDuration').value = '';
+          
+          // Reset button
+          const addBtn = document.getElementById('addServiceBtn');
+          addBtn.textContent = 'Add Service';
+          delete addBtn.dataset.serviceId;
+          addBtn.removeEventListener('click', updateService);
+          addBtn.addEventListener('click', addService);
+          
+          // Reload services
+          loadServices();
+        } else {
+          alert('Failed to update service: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating service');
+      });
+    }
+
+    // Load earnings data
+    function loadEarnings() {
+      console.log("Loading provider earnings...");
+      
+      // Display loading state
+      document.getElementById('total-earnings').textContent = 'Loading...';
+      document.getElementById('month-earnings').textContent = 'Loading...';
+      document.getElementById('pending-payments').textContent = 'Loading...';
+      
+      const tableBody = document.getElementById('payment-history-table');
+      if (tableBody) {
+        tableBody.innerHTML = '<tr><td colspan="5" class="text-center">Loading payment data...</td></tr>';
+      }
+      
+      fetch('/api/user/payments')
+        .then(response => {
+          console.log("Payment API response status:", response.status);
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(payments => {
+          console.log(`Received ${payments.length} payment records:`, payments);
+          
+          // Toggle visibility of test payment button based on whether payments exist
+          const testPaymentBtn = document.getElementById('createTestPaymentsBtn');
+          if (testPaymentBtn) {
+            testPaymentBtn.style.display = payments.length > 0 ? 'none' : 'block';
+          }
+          
+          // Calculate earnings statistics
+          let totalEarnings = 0;
+          let pendingEarnings = 0;
+          let thisMonthEarnings = 0;
+          
+          const currentMonth = new Date().getMonth();
+          const currentYear = new Date().getFullYear();
+          
+          payments.forEach(payment => {
+            if (payment.Amount) {
+              const amount = parseFloat(payment.Amount);
+              console.log(`Processing payment amount: $${amount}`);
+              totalEarnings += amount;
+              
+              // Check if payment is from current month
+              const paymentDate = new Date(payment.PaymentDate || payment.Timestamp);
+              console.log(`Payment date: ${paymentDate}, Current month: ${currentMonth}, Year: ${currentYear}`);
+              if (paymentDate.getMonth() === currentMonth && paymentDate.getFullYear() === currentYear) {
+                thisMonthEarnings += amount;
+              }
+              
+              // Check if payment is pending
+              if (payment.PaymentStatus !== 'Success') {
+                pendingEarnings += amount;
+              }
+            }
+          });
+          
+          console.log(`Calculated earnings - Total: $${totalEarnings}, This month: $${thisMonthEarnings}, Pending: $${pendingEarnings}`);
+          
+          // Update earnings display
+          document.getElementById('total-earnings').textContent = '$' + totalEarnings.toFixed(2);
+          document.getElementById('month-earnings').textContent = '$' + thisMonthEarnings.toFixed(2);
+          document.getElementById('pending-payments').textContent = '$' + pendingEarnings.toFixed(2);
+          
+          if (!tableBody) {
+            console.error("Payments table body element not found");
+            return;
+          }
+          
+          tableBody.innerHTML = '';
+          
+          if (payments.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No payments received yet</td></tr>';
+            return;
+          }
+          
+          payments.forEach(payment => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${payment.customer_name || 'N/A'}</td>
+              <td>${payment.service_name || 'N/A'}</td>
+              <td>${payment.PaymentDate || payment.BookingDate || 'N/A'}</td>
+              <td>$${payment.Amount ? parseFloat(payment.Amount).toFixed(2) : '0.00'}</td>
+              <td>
+                <span class="badge bg-${payment.PaymentStatus === 'Success' ? 'success' : 'warning'}">
+                  ${payment.PaymentStatus || 'Pending'}
+                </span>
+              </td>
+            `;
+            tableBody.appendChild(row);
+          });
+        })
+        .catch(error => {
+          console.error('Error loading payments:', error);
+          
+          // Add a debug button to test payment creation
+          const tableBody = document.getElementById('payment-history-table');
+          if (tableBody) {
+            tableBody.innerHTML = `
+              <tr><td colspan="5" class="text-center text-danger">
+                Error loading payment data: ${error.message}
+                <div class="mt-3">
+                  <button onclick="createTestPayment()" class="btn btn-sm btn-outline-primary">Create Test Payment</button>
+                </div>
+              </td></tr>`;
+          }
+          
+          // Update earnings display with zeros if there's an error
+          document.getElementById('total-earnings').textContent = '$0.00';
+          document.getElementById('month-earnings').textContent = '$0.00';
+          document.getElementById('pending-payments').textContent = '$0.00';
+        });
+    }
+    
+    // Function to create a test payment for debugging
+    function createTestPayment() {
+      const button = document.getElementById('createTestPaymentsBtn');
+      if (button) {
+        button.disabled = true;
+        button.innerHTML = '<i class="bi bi-hourglass me-1"></i> Creating Payments...';
+      }
+      
+      fetch('/debug/create-test-payment')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert('Test payments created successfully! Reloading earnings...');
+            loadEarnings();
+          } else {
+            alert('Error creating test payments: ' + data.message);
+          }
+        })
+        .catch(error => {
+          console.error('Error creating test payment:', error);
+          alert('Error creating test payments. Check console for details.');
+        })
+        .finally(() => {
+          if (button) {
+            button.disabled = false;
+            button.innerHTML = '<i class="bi bi-database-add me-1"></i> Generate Test Payments';
+          }
+        });
+    }
+
+    // Load profile data
+    function loadProfileData() {
+      fetch('/api/provider/profile')
+        .then(response => response.json())
+        .then(provider => {
+          // Update profile display in sidebar
+          document.getElementById('provider-name').textContent = provider.Name;
+          document.getElementById('provider-email').textContent = provider.Email;
+          document.getElementById('provider-phone').textContent = provider.Phone_no;
+          
+          // Fill in the profile form
+          document.getElementById('providerName').value = provider.Name;
+          document.getElementById('providerEmail').value = provider.Email;
+          document.getElementById('providerPhone').value = provider.Phone_no;
+          document.getElementById('providerSpecialization').value = provider.Specialization;
+        })
+        .catch(error => {
+          console.error('Error loading profile:', error);
+          alert('Error loading provider profile data');
+        });
+    }
+
+    // Update profile
+    function updateProfile(e) {
+      e.preventDefault();
+      
+      const name = document.getElementById('providerName').value;
+      const email = document.getElementById('providerEmail').value;
+      const phone = document.getElementById('providerPhone').value;
+      const specialization = document.getElementById('providerSpecialization').value;
+      
+      if (!name || !email || !phone) {
+        alert('Please fill in all required fields: Name, Email, and Phone');
+        return;
+      }
+      
+      fetch('/api/provider/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: name,
+          email: email,
+          phone: phone,
+          specialization: specialization
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Profile updated successfully');
+          // Reload profile data to update display
+          loadProfileData();
+        } else {
+          alert('Failed to update profile: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating profile');
+      });
+    }
+
+    // Update password
+    function updatePassword(e) {
+      e.preventDefault();
+      
+      const currentPassword = document.getElementById('currentPassword').value;
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        alert('Please fill in all password fields');
+        return;
+      }
+      
+      if (newPassword !== confirmPassword) {
+        alert('New password and confirmation do not match');
+        return;
+      }
+      
+      fetch('/api/provider/password', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Password updated successfully');
+          // Clear password fields
+          document.getElementById('currentPassword').value = '';
+          document.getElementById('newPassword').value = '';
+          document.getElementById('confirmPassword').value = '';
+        } else {
+          alert('Failed to update password: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating password');
+      });
+    }
+  </script>
+</body>
+</html> 
